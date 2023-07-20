@@ -5,6 +5,7 @@ import { EditorView } from "prosemirror-view";
 import { schema } from "prosemirror-schema-basic";
 import { undo, redo, history } from "prosemirror-history";
 import { keymap } from "prosemirror-keymap";
+import { baseKeymap } from "prosemirror-commands";
 
 //following the steps @ https://prosemirror.net/docs/guide
 
@@ -13,9 +14,17 @@ function App() {
     //this being react we have to wrap everthing inside useEffect
     let state = EditorState.create({
       schema,
-      //plugins extend the behvaior of the editor
-      //here we add history and configure keybinds for undo/redoing changes
-      plugins: [history(), keymap({ "Mod-z": undo, "Mod-y": redo })],
+      /*
+        plugins extend the behvaior of the editor
+        here we add history and configure keybinds for undo/redoing changes
+        we also include the baseKeymap, this gives editor expected behaviour 
+        for things like enter, delete etc. 
+      */
+      plugins: [
+        history(),
+        keymap({ "Mod-z": undo, "Mod-y": redo }),
+        keymap(baseKeymap),
+      ],
     });
     let view = new EditorView(document.querySelector("#editor"), {
       state,
