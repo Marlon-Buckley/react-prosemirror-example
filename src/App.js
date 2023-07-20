@@ -16,9 +16,10 @@ function App() {
       schema,
       /*
         plugins extend the behvaior of the editor
-        here we add history and configure keybinds fsor undo/redoing changes
+        here we add history and configure keybinds for undo/redoing changes
         we also include the baseKeymap, this gives editor expected behaviour 
-        for things like enter, delete etc. 
+        for things like enter, delete etc, Prosemirror calls these 'commands'
+
       */
       plugins: [
         history(),
