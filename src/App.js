@@ -1,23 +1,34 @@
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import { useEffect } from "react";
+import { EditorState } from "prosemirror-state";
+import { EditorView } from "prosemirror-view";
+import { Schema, DOMParser } from "prosemirror-model";
+import { schema } from "prosemirror-schema-basic";
+import { addListNodes } from "prosemirror-schema-list";
+import { exampleSetup } from "prosemirror-example-setup";
 
 function App() {
+  useEffect(() => {
+    const mySchema = new Schema({
+      nodes: addListNodes(schema.spec.nodes, "paragraph block*", "block"),
+      marks: schema.spec.marks,
+    });
+
+    window.view = new EditorView(document.querySelector("#editor"), {
+      state: EditorState.create({
+        doc: DOMParser.fromSchema(mySchema).parse(
+          document.querySelector("#content")
+        ),
+        plugins: exampleSetup({ schema: mySchema }),
+      }),
+    });
+  }, []);
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <div id="editor">
+        <div id="content"></div>
+      </div>
     </div>
   );
 }
