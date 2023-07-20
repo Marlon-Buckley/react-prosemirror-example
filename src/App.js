@@ -2,25 +2,37 @@ import "./App.css";
 import { useEffect } from "react";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
-import { Schema, DOMParser } from "prosemirror-model";
 import { schema } from "prosemirror-schema-basic";
-import { addListNodes } from "prosemirror-schema-list";
-import { exampleSetup } from "prosemirror-example-setup";
+import { undo, redo, history } from "prosemirror-history";
+import { keymap } from "prosemirror-keymap";
+
+//following the steps @ https://prosemirror.net/docs/guide
 
 function App() {
   useEffect(() => {
-    const mySchema = new Schema({
-      nodes: addListNodes(schema.spec.nodes, "paragraph block*", "block"),
-      marks: schema.spec.marks,
+    //this being react we have to wrap everthing inside useEffect
+    let state = EditorState.create({
+      schema,
+      //plugins extend the behvaior of the editor
+      //here we add history and configure keybinds for undo/redoing changes
+      plugins: [history(), keymap({ "Mod-z": undo, "Mod-y": redo })],
     });
-
-    window.view = new EditorView(document.querySelector("#editor"), {
-      state: EditorState.create({
-        doc: DOMParser.fromSchema(mySchema).parse(
-          document.querySelector("#content")
-        ),
-        plugins: exampleSetup({ schema: mySchema }),
-      }),
+    let view = new EditorView(document.querySelector("#editor"), {
+      state,
+      dispatchTransaction(transaction) {
+        //interactions with the editor generate 'state transactions'
+        //document isn't just modified in place, the 'state' of the editor gets updated too
+        //this function hooks into transactions so we can see the size of content in the editor
+        //by default it starts out at 2? not sure why.
+        console.log(
+          "Document size went from",
+          transaction.before.content.size,
+          "to",
+          transaction.doc.content.size
+        );
+        let newState = view.state.apply(transaction);
+        view.updateState(newState);
+      },
     });
   }, []);
 
