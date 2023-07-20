@@ -12,8 +12,15 @@ import { baseKeymap } from "prosemirror-commands";
 function App() {
   useEffect(() => {
     //this being react we have to wrap everthing inside useEffect
+    let doc = schema.node("doc", null, [
+      schema.node("paragraph", null, [schema.text("One.")]),
+      schema.node("horizontal_rule"),
+      schema.node("paragraph", null, [schema.text("Two!")]),
+    ]);
+
     let state = EditorState.create({
       schema,
+      doc: doc, //passing in doc to set the initial state of the editor
       /*
         plugins extend the behvaior of the editor
         here we add history and configure keybinds for undo/redoing changes
