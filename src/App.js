@@ -23,7 +23,7 @@ function App() {
         //interactions with the editor generate 'state transactions'
         //document isn't just modified in place, the 'state' of the editor gets updated too
         //this function hooks into transactions so we can see the size of content in the editor
-        //by default it starts out at 2? not sure why.
+        //by default it starts out at 2? not sure why yet.
         console.log(
           "Document size went from",
           transaction.before.content.size,
