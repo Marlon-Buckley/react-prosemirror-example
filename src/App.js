@@ -1,65 +1,77 @@
-import "./App.css";
-import { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { EditorState } from "prosemirror-state";
 import { EditorView } from "prosemirror-view";
+import { DOMParser, Schema } from "prosemirror-model";
 import { schema } from "prosemirror-schema-basic";
-import { undo, redo, history } from "prosemirror-history";
-import { keymap } from "prosemirror-keymap";
+import { addListNodes } from "prosemirror-schema-list";
 import { baseKeymap } from "prosemirror-commands";
+import { keymap } from "prosemirror-keymap";
+import { undo, redo } from "prosemirror-history";
+import { history } from "prosemirror-history";
 
-//following the steps @ https://prosemirror.net/docs/guide
+import "./App.css";
+
+const customKeys = {
+  "Mod-z": undo,
+  "Shift-Mod-z": redo, // mac
+  "Mod-y": redo, // windows
+};
 
 function App() {
+  const [editorView, setEditorView] = useState(null);
+
   useEffect(() => {
-    //this being react we have to wrap everthing inside useEffect
-    let doc = schema.node("doc", null, [
-      schema.node("paragraph", null, [schema.text("One.")]),
-      schema.node("horizontal_rule"),
-      schema.node("paragraph", null, [schema.text("Two!")]),
-    ]);
-
-    let state = EditorState.create({
-      schema,
-      doc: doc, //passing in doc to set the initial state of the editor
-      /*
-        plugins extend the behvaior of the editor
-        here we add history and configure keybinds for undo/redoing changes
-        we also include the baseKeymap, this gives editor expected behaviour 
-        for things like enter, delete etc, Prosemirror calls these 'commands'
-
-      */
-      plugins: [
-        history(),
-        keymap({ "Mod-z": undo, "Mod-y": redo }),
-        keymap(baseKeymap),
-      ],
+    const mySchema = new Schema({
+      nodes: addListNodes(schema.spec.nodes, "paragraph block*", "block"),
+      marks: schema.spec.marks,
     });
-    let view = new EditorView(document.querySelector("#editor"), {
-      state,
-      dispatchTransaction(transaction) {
-        /* 
-        interactions with the editor generate 'state transactions'
-        document isn't just modified in place, the 'state' of the editor gets updated too
-        this function hooks into transactions so we can see the size of content in the editor
-        by default it starts out at 2? not sure why yet.
-        */
-        console.log(
-          "Document size went from",
-          transaction.before.content.size,
-          "to",
-          transaction.doc.content.size
-        );
-        let newState = view.state.apply(transaction);
-        view.updateState(newState);
-      },
+
+    const view = new EditorView(document.querySelector("#editor"), {
+      state: EditorState.create({
+        doc: DOMParser.fromSchema(mySchema).parse(
+          document.querySelector("#content")
+        ),
+        plugins: [keymap({ ...customKeys, ...baseKeymap }), history()],
+      }),
     });
+
+    setEditorView(view);
+
+    return () => {
+      view.destroy();
+    };
   }, []);
+
+  const copySelection = (state, dispatch) => {
+    const { from, to } = state.selection;
+    const selectedText = state.doc.textBetween(from, to, "\n");
+    navigator.clipboard.writeText(selectedText);
+  };
+
+  const pasteSelection = async (state, dispatch) => {
+    const textToPaste = await navigator.clipboard.readText();
+    const dispatchPaste = state.tr.replaceSelectionWith(
+      state.schema.text(textToPaste)
+    );
+    dispatch(dispatchPaste);
+  };
 
   return (
     <div className="App">
-      <div id="editor">
-        <div id="content"></div>
+      <div className="menu">
+        <button
+          onClick={() => copySelection(editorView.state, editorView.dispatch)}
+        >
+          Copy
+        </button>
+        <button
+          onClick={() => pasteSelection(editorView.state, editorView.dispatch)}
+        >
+          Paste
+        </button>
       </div>
+      <div id="editor" />
+      <div id="content" />
     </div>
   );
 }
